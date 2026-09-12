@@ -51,7 +51,7 @@ end
 
 -- Janela Principal com o novo título
 local Window = Rayfield:CreateWindow({
-   Name = "MENU @DUCRA e @MUULK999",
+   Name = "YT:MUULK MENU FRIEND:DUCRA",
    LoadingTitle = "Iniciando Script...",
    LoadingSubtitle = "by @DUCRA & @MUULK999",
    ConfigurationSaving = { Enabled = false }
