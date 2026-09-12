@@ -53,7 +53,7 @@ end
 local Window = Rayfield:CreateWindow({
    Name = "YT:MUULK MENU FRIEND:DUCRA",
    LoadingTitle = "Iniciando Script...",
-   LoadingSubtitle = "by @DUCRA & @MUULK999",
+   LoadingSubtitle = "YT:MUULK MENU FRIEND:DUCRA",
    ConfigurationSaving = { Enabled = false }
 })
 
