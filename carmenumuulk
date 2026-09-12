@@ -1,0 +1,145 @@
+-- Carrega a biblioteca Rayfield GUI
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Variáveis de controle
+local TargetPlayerName = ""
+local OscillationActive = false
+local DetectionRadius = 15 -- Raio para achar o carro
+local OscillationDistance = 6 -- Distância do ir e voltar (em blocos)
+
+-- Função para obter a lista de jogadores do servidor
+local function GetPlayersList()
+   local playerList = {}
+   for _, player in pairs(game.Players:GetPlayers()) do
+      if player ~= game.Players.LocalPlayer then
+         table.insert(playerList, player.Name)
+      end
+   end
+   if #playerList == 0 then
+      table.insert(playerList, "Nenhum outro jogador")
+   end
+   return playerList
+end
+
+-- Função para identificar o modelo de carro mais próximo
+local function GetNearestCar()
+   local myChar = game.Players.LocalPlayer.Character
+   if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
+
+   local myPos = myChar.HumanoidRootPart.Position
+   local nearestCar = nil
+   local shortestDistance = DetectionRadius
+
+   for _, obj in pairs(workspace:GetDescendants()) do
+      if obj:IsA("Model") and obj ~= myChar and not obj:IsDescendantOf(myChar) then
+         local hasSeat = obj:FindFirstChildWhichIsA("VehicleSeat", true) or obj:FindFirstChildWhichIsA("Seat", true)
+         
+         if hasSeat then
+            local primary = obj.PrimaryPart or hasSeat
+            local distance = (primary.Position - myPos).Magnitude
+
+            if distance < shortestDistance then
+               shortestDistance = distance
+               nearestCar = obj
+            end
+         end
+      end
+   end
+
+   return nearestCar
+end
+
+-- Janela Principal com o novo título
+local Window = Rayfield:CreateWindow({
+   Name = "MENU @DUCRA e @MUULK999",
+   LoadingTitle = "Iniciando Script...",
+   LoadingSubtitle = "by @DUCRA & @MUULK999",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local MainTab = Window:CreateTab("Principal", 4483362458)
+
+-- Dropdown de Seleção do Player
+local PlayerDropdown = MainTab:CreateDropdown({
+   Name = "Selecione o Jogador Alvo",
+   Options = GetPlayersList(),
+   CurrentOption = {"Selecione..."},
+   MultipleOptions = false,
+   Flag = "PlayerTargetDropdownOscillate",
+   Callback = function(Option)
+      TargetPlayerName = Option[1]
+   end,
+})
+
+-- Botão de Atualizar Lista
+MainTab:CreateButton({
+   Name = "Atualizar Lista de Jogadores",
+   Callback = function()
+      PlayerDropdown:Refresh(GetPlayersList())
+      Rayfield:Notify({
+         Title = "Lista Atualizada",
+         Content = "Jogadores no mapa recarregados.",
+         Duration = 3,
+      })
+   end,
+})
+
+-- Controles de Ajuste do Ir e Voltar
+MainTab:CreateSlider({
+   Name = "Distância do Ir e Voltar",
+   Range = {2, 20},
+   Increment = 1,
+   Suffix = "Blocos",
+   CurrentValue = 6,
+   Flag = "DistanceSlider",
+   Callback = function(Value)
+      OscillationDistance = Value
+   end,
+})
+
+-- Toggle Principal: Ir e Voltar Rápido no Player
+MainTab:CreateToggle({
+   Name = "Ir e Voltar Rápido no Player",
+   CurrentValue = false,
+   Flag = "OscillateToggle",
+   Callback = function(Value)
+      OscillationActive = Value
+
+      task.spawn(function()
+         local forward = true
+
+         while OscillationActive do
+            task.wait(0.01) -- Execução em alta frequência
+
+            local myPlayer = game.Players.LocalPlayer
+            local myChar = myPlayer.Character
+            local targetPlayer = game.Players:FindFirstChild(TargetPlayerName)
+
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") and targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+               
+               local myHRP = myChar.HumanoidRootPart
+               local targetHRP = targetPlayer.Character.HumanoidRootPart
+
+               -- Alterna o deslocamento entre FRENTE e ATRÁS do alvo
+               local offsetZ = forward and OscillationDistance or -OscillationDistance
+               forward = not forward
+
+               local destinationCFrame = targetHRP.CFrame * CFrame.new(0, 1, offsetZ)
+
+               -- 1. Puxa o carro próximo
+               local nearestCar = GetNearestCar()
+               if nearestCar then
+                  if nearestCar.PrimaryPart then
+                     nearestCar:SetPrimaryPartCFrame(destinationCFrame)
+                  else
+                     nearestCar:PivotTo(destinationCFrame)
+                  end
+               end
+
+               -- 2. Teleporta o seu personagem para a mesma posição
+               myHRP.CFrame = destinationCFrame
+            end
+         end
+      end)
+   end,
+})
